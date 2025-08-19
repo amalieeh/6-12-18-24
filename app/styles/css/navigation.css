@@ -1,0 +1,11 @@
+
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+nav a {
+  color: var(--h1-color);
+  font-size: 2rem;
+}

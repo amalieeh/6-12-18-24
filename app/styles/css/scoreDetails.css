@@ -1,0 +1,12 @@
+
+.score-trackers {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  max-width: 800px;
+}
+
+.score-card {
+  cursor: pointer;
+  background-color: brown;
+}

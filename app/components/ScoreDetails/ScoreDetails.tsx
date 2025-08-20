@@ -1,29 +1,32 @@
 import { useState } from 'react';
-import '../../css/scoreDetails.css';
+import '../../styles/scoreDetails.css';
 import ChangeScoreModal from './ChangeScoreModal';
 import ScoreCard from './ScoreCard';
 
 interface ScoreDetailsProps {
+  playerName: string;
   scores: number[];
   maxScores: number[];
-  setScores: (newScores: number[]) => void;
+  categories?: { name: string; unit: string }[]; // Add categories as prop
 }
 
-const ScoreDetails = ({ scores, maxScores, setScores }: ScoreDetailsProps) => {
-  const [showChangeModal, setShowChangeModal] = useState(false);
-  const categories = ["Øl", "Dougnuts", "Censored", "Km løpt"]
+const ScoreDetails = ({ playerName, scores, maxScores, categories }: ScoreDetailsProps) => {
+  const [showChangeModalCategory, setShowChangeModalCategory] = useState<string | null>(null);
+  
+  // Use database categories if provided, otherwise fallback to hardcoded ones
+  const categoryNames = categories ? categories.map(cat => cat.name) : ["Øl", "Dougnuts", "Censored", "Km løpt"];
 
   return (
     <>
-      {showChangeModal && <ChangeScoreModal onClose={() => setShowChangeModal(false)} onSave={setScores} currentScores={scores} />}
+      {showChangeModalCategory && <ChangeScoreModal playerName={playerName} category={showChangeModalCategory} score={scores[categoryNames.indexOf(showChangeModalCategory)]} maxScore={maxScores[categoryNames.indexOf(showChangeModalCategory)]} onClose={() => setShowChangeModalCategory(null)} />}
       <div className="score-trackers">
-        {categories.map((category, index) => (
+        {categoryNames.map((category, index) => (
           <ScoreCard
             key={category}
             name={category}
             score={scores[index]}
             maxScore={maxScores[index]}
-            onClick={() => setShowChangeModal(true)}
+            onClick={() => setShowChangeModalCategory(category)}
           />
         ))}
       </div>

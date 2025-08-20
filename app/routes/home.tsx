@@ -1,5 +1,6 @@
 import { useLoaderData } from "react-router";
 import { getAllPlayers } from "~/models/game.server";
+import '../styles/home.css';
 import type { Route } from "./+types/home";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -11,6 +12,11 @@ export default function Home() {
   const { players } = useLoaderData<typeof loader>();
   
   return (
+    <>
+    <div className="home-content">
+      <h1>6-12-18-24</h1>
+    </div>
+    <hr className="my-8" />
     <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto", textAlign: "center" }}>
       <h1 style={{ fontSize: "48px", marginBottom: "10px" }}>🎮 Game Tracker</h1>
       <p style={{ fontSize: "18px", color: "#666", marginBottom: "40px" }}>
@@ -139,6 +145,6 @@ export default function Home() {
           </a>
         </div>
       )}
-    </div>
+    </div></>
   );
 }

@@ -1,13 +1,20 @@
-import { Link } from "react-router-dom";
 
-import "../css/navigation.css";
+import "../styles/navigation.css";
 
 const Navigation = () => {
   return (
     <nav>
-      <Link to="/">Hjem →</Link>
-      <Link to="/leaderboard">Ledertavle →</Link>
-      <Link to="/profile">Profil →</Link>
+        <a
+          href="/"
+        >
+          <h2>Hjem →</h2>
+        </a>
+        <a href="/dashboard">
+          <h2>Ledertavle →</h2>
+        </a>
+        <a href="/player/ertbert">
+          <h2>Profil →</h2>
+        </a>
     </nav>
   );
 };

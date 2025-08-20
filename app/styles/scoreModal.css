@@ -111,15 +111,6 @@
   font-weight: 500;
 }
 
-.modal-footer {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
-}
-
 .btn {
   padding: 0.75rem 1.5rem;
   border-radius: 4px;
@@ -131,25 +122,25 @@
   outline: none;
 }
 
-.btn-cancel {
-  background-color: white;
-  color: #666;
-  border: 2px solid #ddd;
+.btn-remove {
+  background-color: rgb(255, 202, 202);
+  color: #440202;
+  border: 2px solid #b38787;
 }
 
-.btn-cancel:hover {
-  background-color: #f5f5f5;
-  border-color: #bbb;
-  color: #333;
+.btn-remove:hover {
+  background-color: #e72424;
+  border-color: #841313;
+  color: #2c0101;
 }
 
-.btn-save {
+.btn-add {
   background-color: #007bff;
   color: white;
   border: 2px solid #007bff;
 }
 
-.btn-save:hover {
+.btn-add:hover {
   background-color: #0056b3;
   border-color: #0056b3;
   transform: translateY(-1px);

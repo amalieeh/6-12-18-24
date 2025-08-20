@@ -1,17 +1,12 @@
 // Leaderboard.tsx
-import '../../css/leaderboard.css';
-import '../../css/progressBar.css';
+import type { PlayerSummary } from '~/models/game.server';
+import '../../styles/leaderboard.css';
+import '../../styles/progressBar.css';
 import ProgressBar from './ProgressBar';
 
-export interface Player {
-  id: number;
-  name: string;
-  score: number;
-  avatar?: string;
-}
 
 interface LeaderboardProps {
-  players: Player[];
+  players: PlayerSummary[];
   title?: string;
   maxEntries?: number;
   maxScore?: number;
@@ -24,7 +19,7 @@ const Leaderboard = ({
 }: LeaderboardProps) => {
   // Sort players by score in descending order and limit entries
   const sortedPlayers = [...players]
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.completion_score - a.completion_score);
 
   const getProgressPercentage = (score: number): number => {
     if (maxScore === 0) return 0;
@@ -52,10 +47,12 @@ const Leaderboard = ({
           <div className="progress-items">
             {sortedPlayers.map((player, index) => {
                 const rank = index + 1;
-                const progressPercentage = getProgressPercentage(player.score);
+                const progressPercentage = getProgressPercentage(player.completion_score);
                 const barColor = getRankColor(rank);
               return (
-                <div className='progress-item' key={player.id}>
+                <div className='' key={player.id}>
+                  <p>{player.name}</p>
+                  <div className='progress-item'>
                   <span className="rank-badge" style={{ backgroundColor: barColor }}>
                     {rank === 1 && <div className="rank-shine" />}
                     #{rank}
@@ -66,6 +63,7 @@ const Leaderboard = ({
                     barColor={'aqua'}
                     barText={player.name}
                   />
+</div>
                 </div>
               );
             })}

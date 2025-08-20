@@ -1,17 +1,18 @@
-import { useEffect, useState } from "react";
-import '../../css/scoreModal.css';
+import { useEffect } from "react";
+import { useFetcher } from "react-router";
+import '../../styles/scoreModal.css';
 
 type ChangeScoreModalProps = {
+  playerName: string;
+  category: string;
+  score: number;
+  maxScore: number;
   onClose: () => void;
-  onSave: (newScores: number[]) => void;
-  currentScores: number[];
 }
-const ChangeScoreModal = ({ onClose, onSave, currentScores }: ChangeScoreModalProps) => {
-  const [scores, setScores] = useState(currentScores);
-  const categories = ["Øl", "Dougnuts", "Censored", "Km løpt"];
-  const maxScores = [18, 12, 6, 24]; // You might want to pass this as a prop
 
-  // Close modal on escape key
+const ChangeScoreModal = ({ playerName, category, score, maxScore, onClose }: ChangeScoreModalProps) => {
+  const fetcher = useFetcher();
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -23,18 +24,14 @@ const ChangeScoreModal = ({ onClose, onSave, currentScores }: ChangeScoreModalPr
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
-  const handleScoreChange = (index: number, newScore: string) => {
-    const scoreValue = parseInt(newScore) || 0;
-    const clampedScore = Math.max(0, Math.min(scoreValue, maxScores[index]));
+  const handleAddPoints = (playerName: string, category: string, points: number) => {
+    console.log(`Adding ${points} points to ${category}`);
     
-    const newScores = [...scores];
-    newScores[index] = clampedScore;
-    setScores(newScores);
-  };
-
-  const handleSave = () => {
-    onSave(scores);
-    onClose();
+    // Use fetcher to submit the form data to the action
+    fetcher.submit(
+      { category, amount: points.toString() },
+      { method: "post" }
+    );
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -47,36 +44,46 @@ const ChangeScoreModal = ({ onClose, onSave, currentScores }: ChangeScoreModalPr
     <div className="modal-backdrop" onClick={handleBackdropClick}>
       <div className="modal-content">
         <div className="modal-header">
-          <h2 className="modal-title">Change Scores</h2>
+          <h2 className="modal-title">Endre score</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="modal-body">
-          {categories.map((category, index) => (
-            <div key={category} className="score-field">
-              <label className="score-label">{category}</label>
-              <div className="score-input-wrapper">
-                <input
-                  type="number"
-                  min="0"
-                  max={maxScores[index]}
-                  value={scores[index]}
-                  onChange={(e) => handleScoreChange(index, e.target.value)}
-                  className="score-input"
-                />
-                <span className="score-max">/ {maxScores[index]} poeng</span>
-              </div>
+          <div key={category} className="score-field">
+            <label className="score-label">{category}: {score}/{maxScore}</label>
+            <div className="score-input-wrapper">
+              <button 
+                className="btn btn-add" 
+                onClick={() => handleAddPoints(playerName, category, 1)}
+                disabled={fetcher.state === "submitting"}
+              >
+                + 1
+              </button>
+              <button 
+                className="btn btn-add" 
+                onClick={() => handleAddPoints(playerName, category, 5)}
+                disabled={fetcher.state === "submitting"}
+              >
+                + 5
+              </button>
+              <br />
+              <button 
+                className="btn btn-remove" 
+                onClick={() => handleAddPoints(playerName, category, -1)}
+                disabled={fetcher.state === "submitting"}
+              >
+                - 1
+              </button>
+              <button 
+                className="btn btn-remove" 
+                onClick={() => handleAddPoints(playerName, category, -5)}
+                disabled={fetcher.state === "submitting"}
+              >
+                - 5
+              </button>
             </div>
-          ))}
-        </div>
-
-        <div className="modal-footer">
-          <button className="btn btn-cancel" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn-save" onClick={handleSave}>
-            Save Changes
-          </button>
+            {fetcher.state === "submitting" && <p>Updating...</p>}
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import '../../css/progressBar.css';
+import '../../styles/progressBar.css';
 
 interface ProgressBarProps {
   progressPercentage: number;

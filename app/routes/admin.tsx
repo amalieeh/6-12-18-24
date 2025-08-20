@@ -1,11 +1,11 @@
 import { useLoaderData } from "react-router";
-import { getAllCategories, getAllPlayers, getLeaderboard } from "~/models/game.server";
+import { getAllCategories, getAllPlayers, getSummaryPlayers } from "~/models/game.server";
 import type { Route } from "./+types/admin";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const players = getAllPlayers();
   const categories = getAllCategories();
-  const leaderboard = getLeaderboard();
+  const leaderboard = getSummaryPlayers();
   
   return { players, categories, leaderboard };
 }
@@ -153,7 +153,7 @@ export default function Admin() {
           <h2>🏆 Current Leaderboard</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px" }}>
             {leaderboard.map((entry, index) => (
-              <div key={entry.player_name} style={{
+              <div key={entry.name} style={{
                 backgroundColor: index === 0 ? "#fff3cd" : "#f8f9fa",
                 border: index === 0 ? "2px solid #ffc107" : "1px solid #dee2e6",
                 padding: "15px",
@@ -161,10 +161,10 @@ export default function Admin() {
                 textAlign: "center"
               }}>
                 <div style={{ fontSize: "18px", fontWeight: "bold" }}>
-                  {index === 0 ? "👑" : `#${index + 1}`} {entry.player_name}
+                  {index === 0 ? "👑" : `#${index + 1}`} {entry.name}
                 </div>
                 <div style={{ fontSize: "24px", color: "#007bff", fontWeight: "bold" }}>
-                  {entry.overall_completion}%
+                  {entry.completion_score}%
                 </div>
               </div>
             ))}

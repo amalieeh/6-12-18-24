@@ -14,7 +14,7 @@ export interface Category {
   created_at: string;
 }
 
-export interface PlayerCommitment {
+export interface PlayerStatus {
   player_name: string;
   category_name: string;
   unit: string;
@@ -93,7 +93,7 @@ export function setPlayerCommitment(playerName: string, categoryName: string, ta
   stmt.run(player.id, category.id, targetAmount);
 }
 
-export function getPlayerCommitments(playerName: string): PlayerCommitment[] {
+export function getPlayerStatuses(playerName: string): PlayerStatus[] {
   const stmt = db.prepare(`
     SELECT 
       p.name as player_name,
@@ -111,7 +111,7 @@ export function getPlayerCommitments(playerName: string): PlayerCommitment[] {
     ORDER BY c.name
   `);
   
-  return stmt.all(playerName) as PlayerCommitment[];
+  return stmt.all(playerName) as PlayerStatus[];
 }
 
 // ===== PROGRESS =====
@@ -136,7 +136,14 @@ export function addProgress(playerName: string, categoryName: string, amount: nu
   };
 }
 
-export function getPlayerProgress(playerName: string): any[] {
+export interface PlayerProgress {
+  category_name: string;
+  unit: string;
+  amount: number;
+  recorded_at: string;
+}
+
+export function getPlayerProgress(playerName: string): PlayerProgress[] {
   const stmt = db.prepare(`
     SELECT 
       c.name as category_name,
@@ -149,41 +156,62 @@ export function getPlayerProgress(playerName: string): any[] {
     WHERE p.name = ?
     ORDER BY pe.recorded_at DESC
   `);
-  
-  return stmt.all(playerName);
+
+  return stmt.all(playerName) as PlayerProgress[];
+}
+
+export function getAllProgresses(): PlayerProgress[] {
+  const stmt = db.prepare(`
+    SELECT 
+      c.name as category_name,
+      c.unit,
+      pe.amount,
+      pe.recorded_at
+    FROM progress_entries pe
+    JOIN categories c ON pe.category_id = c.id
+    JOIN players p ON pe.player_id = p.id
+    ORDER BY pe.recorded_at DESC
+  `);
+
+  return stmt.all() as PlayerProgress[];
 }
 
 // ===== LEADERBOARD =====
-export interface LeaderboardEntry {
-  player_name: string;
-  overall_completion: number;
+export interface PlayerSummary {
+  id: number;
+  name: string;
+  completion_score: number;
+  max_completion_score: number;
+  completion_percentage: number;
 }
 
-export function getLeaderboard(): LeaderboardEntry[] {
+export function getSummaryPlayers(): PlayerSummary[] {
   const stmt = db.prepare(`
     SELECT 
-      p.name as player_name,
-      ROUND(AVG(
-        CASE 
-          WHEN pc.target_amount > 0 THEN (COALESCE(prog.total_progress, 0) * 100.0 / pc.target_amount)
-          ELSE 0 
-        END
-      ), 1) as overall_completion
+      p.id as id,
+      p.name as name,
+      COALESCE(progress_totals.total_progress, 0) as completion_score,
+      commitment_totals.total_target as max_completion_score,
+      ROUND((COALESCE(progress_totals.total_progress, 0) * 100.0 / commitment_totals.total_target), 1) as completion_percentage
     FROM players p
-    JOIN player_commitments pc ON p.id = pc.player_id
+    JOIN (
+      SELECT 
+        player_id,
+        SUM(target_amount) as total_target
+      FROM player_commitments
+      GROUP BY player_id
+    ) commitment_totals ON p.id = commitment_totals.player_id
     LEFT JOIN (
       SELECT 
-        player_id, 
-        category_id, 
+        player_id,
         SUM(amount) as total_progress
-      FROM progress_entries 
-      GROUP BY player_id, category_id
-    ) prog ON prog.player_id = pc.player_id AND prog.category_id = pc.category_id
-    GROUP BY p.id, p.name
-    ORDER BY overall_completion DESC
+      FROM progress_entries
+      GROUP BY player_id
+    ) progress_totals ON p.id = progress_totals.player_id
+    ORDER BY completion_percentage DESC
   `);
   
-  return stmt.all() as LeaderboardEntry[];
+  return stmt.all() as PlayerSummary[];
 }
 
 // ===== UTILITY =====

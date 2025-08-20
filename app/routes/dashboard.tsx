@@ -37,9 +37,8 @@ export default function Dashboard() {
         sortedPlayers.map((player, index) => {
           const rank = index + 1;
           const barColor = getRankColor(rank);
-  console.log(`Checking progress: ${player.completion_percentage}% : ${player.completion_score} / ${player.max_completion_score}`);
           return (
-          <div key={player.id} className="grid grid-cols-8 gap-3">
+          <div key={player.id} className="grid grid-cols-8 gap-3 cursor-pointer" onClick={() => window.location.href = `/player/${player.name}`}>
 
                   <span className="rank-badge col-span-1" style={{ backgroundColor: barColor }}>
                     {rank === 1 && <div className="rank-shine" />}

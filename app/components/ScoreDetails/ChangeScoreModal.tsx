@@ -10,6 +10,7 @@ type ChangeScoreModalProps = {
   onClose: () => void;
 }
 
+// TODO: Should not be able to add more than max number of points to category
 const ChangeScoreModal = ({ playerName, category, score, maxScore, onClose }: ChangeScoreModalProps) => {
   const fetcher = useFetcher();
 

@@ -6,7 +6,7 @@ import '../styles/progressBar.css';
 import type { Route } from "./+types/dashboard";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  
+
   const categories = getAllCategories();
 
   const players = getSummaryPlayers();
@@ -33,26 +33,25 @@ export default function Dashboard() {
       <h1>Tester funksjon</h1>
       <h2 className="mb-12">Players ({sortedPlayers.length})</h2>
       <div className="flex flex-col gap-2 w-full">
-      {sortedPlayers.length > 0 ? (
-        sortedPlayers.map((player, index) => {
-          const rank = index + 1;
-          const barColor = getRankColor(rank);
-          return (
-          <div key={player.id} className="grid grid-cols-8 gap-3 cursor-pointer" onClick={() => window.location.href = `/player/${player.name}`}>
-
-                  <span className="rank-badge col-span-1" style={{ backgroundColor: barColor }}>
-                    {rank === 1 && <div className="rank-shine" />}
-                    #{rank}
-                  </span>
-            <span className="grid col-span-7" style={{ color: barColor }}>
-              <ProgressBar key={player.id} progressPercentage={player.completion_percentage} barColor={getRankColor(0)} barText={player.name} />
-            </span>
-          </div>
-        );
-      })
-      ) : (
-        <p>No players yet. <a href="/add-player">Add a player</a></p>
-      )}
+        {sortedPlayers.length > 0 ? (
+          sortedPlayers.map((player, index) => {
+            const rank = index + 1;
+            const barColor = getRankColor(rank);
+            return (
+              <div key={player.id} className="flex flex-row gap-4 cursor-pointer" onClick={() => window.location.href = `/player/${player.name}`}>
+                <span className="rank-badge" style={{ backgroundColor: barColor }}>
+                  {rank === 1 && <div className="rank-shine" />}
+                  #{rank}
+                </span>
+                <span className="grid w-full" style={{ color: barColor }}>
+                  <ProgressBar key={player.id} progressPercentage={player.completion_percentage} barColor={getRankColor(0)} barText={player.name} />
+                </span>
+              </div>
+            );
+          })
+        ) : (
+          <p>No players yet. <a href="/add-player">Add a player</a></p>
+        )}
       </div>
     </div>
   );

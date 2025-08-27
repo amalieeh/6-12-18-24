@@ -3,6 +3,12 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --color-test: #38fffa;
+  --color-brand-border: var(--main-color);
+  --color-brand-header: var(--main-color);
+  --color-brand-text: var(--main-text-color);
+  --color-brand-bg: var(--main-bg-color);
+  --color-main: var(--main-color);
 }
 
 
@@ -11,6 +17,7 @@
   --main-bg-color: #272727;
   --main-text-color: #ffffff;
   --h1-color: aqua;
+  --main-color: aqua;
 }
 
 body {

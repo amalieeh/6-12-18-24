@@ -2,34 +2,20 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Make npm version match your lockfile, optional:
+# Match lockfile npm (optional but good)
 RUN npm i -g npm@11.5.2
 
-# ⛏️ Force anon installs & delete any injected token/always-auth
-ENV NPM_TOKEN= \
-    NODE_AUTH_TOKEN=
-RUN npm config set registry https://registry.npmjs.org/ \
- && npm config delete '//registry.npmjs.org/:_authToken' || true \
- && npm config delete '@*:registry' || true \
- && npm config set always-auth false
+# Force anonymous installs + clean any inherited auth/registry
+ENV NPM_TOKEN=
+ENV NODE_AUTH_TOKEN=
+ENV NPM_CONFIG_REGISTRY=https://registry.npmjs.org/
+ENV NPM_CONFIG_ALWAYS_AUTH=false
+
+# Remove any npmrc that the platform might inject
+RUN rm -f /root/.npmrc /etc/npmrc /usr/local/etc/npmrc || true
+
+# Create a minimal project npmrc that only sets the public registry
+RUN printf 'registry=https://registry.npmjs.org/\n' > .npmrc
 
 COPY package*.json ./
 RUN npm ci
-
-# ---- build ----
-FROM node:20-alpine AS build
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
-
-# ---- runtime ----
-FROM node:20-alpine AS runtime
-WORKDIR /app
-ENV NODE_ENV=production
-COPY package*.json ./
-COPY --from=deps /app/node_modules ./node_modules
-RUN npm prune --omit=dev
-COPY --from=build /app/build ./build
-EXPOSE 3000
-CMD ["npm", "start"]

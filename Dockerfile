@@ -18,4 +18,11 @@ RUN rm -f /root/.npmrc /etc/npmrc /usr/local/etc/npmrc || true
 RUN printf 'registry=https://registry.npmjs.org/\n' > .npmrc
 
 COPY package*.json ./
+
+RUN echo "---- npm config (long) ----" \
+ && npm config list -l \
+ && echo "---- env (filtered) ----" \
+ && env | sort | grep -E 'NPM|NODE_AUTH|^npm' || true
+
+
 RUN npm ci

@@ -7,18 +7,27 @@ interface ScoreDetailsProps {
   scores: number[];
   maxScores: number[];
   categories?: { name: string; unit: string }[]; // Add categories as prop
+  canEdit?: boolean; // Add canEdit prop
 }
 
-const ScoreDetails = ({ playerName, scores, maxScores, categories }: ScoreDetailsProps) => {
+const ScoreDetails = ({ playerName, scores, maxScores, categories, canEdit = true }: ScoreDetailsProps) => {
   const [showChangeModalCategory, setShowChangeModalCategory] = useState<string | null>(null);
-  
+
   // Use database categories if provided, otherwise fallback to hardcoded ones
   // TODO: remove ^ ?
   const categoryNames = categories ? categories.map(cat => cat.name) : ["Øl", "Dougnuts", "Censored", "Km løpt"];
 
   return (
     <>
-      {showChangeModalCategory && <ChangeScoreModal playerName={playerName} category={showChangeModalCategory} score={scores[categoryNames.indexOf(showChangeModalCategory)]} maxScore={maxScores[categoryNames.indexOf(showChangeModalCategory)]} onClose={() => setShowChangeModalCategory(null)} />}
+      {showChangeModalCategory && canEdit && (
+        <ChangeScoreModal
+          playerName={playerName}
+          category={showChangeModalCategory}
+          score={scores[categoryNames.indexOf(showChangeModalCategory)]}
+          maxScore={maxScores[categoryNames.indexOf(showChangeModalCategory)]}
+          onClose={() => setShowChangeModalCategory(null)}
+        />
+      )}
       <div className="grid grid-cols-2 gap-4 max-w-3xl">
         {categoryNames.map((category, index) => (
           <ScoreCard
@@ -26,7 +35,8 @@ const ScoreDetails = ({ playerName, scores, maxScores, categories }: ScoreDetail
             name={category}
             score={scores[index]}
             maxScore={maxScores[index]}
-            onClick={() => setShowChangeModalCategory(category)}
+            onClick={canEdit ? () => setShowChangeModalCategory(category) : undefined}
+            canEdit={canEdit}
           />
         ))}
       </div>

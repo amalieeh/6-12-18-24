@@ -1,20 +1,20 @@
 // Leaderboard.tsx
-import type { PlayerSummary } from '~/models/game.server';
+import type { UserSummary } from '~/models/game.server';
 import '../../styles/leaderboard.css';
 import '../../styles/progressBar.css';
 import ProgressBar from './ProgressBar';
 
 
 interface LeaderboardProps {
-  players: PlayerSummary[];
+  players: UserSummary[];
   title?: string;
   maxEntries?: number;
   maxScore?: number;
 }
 
-const Leaderboard = ({ 
-  players, 
-  title = "Leaderboard", 
+const Leaderboard = ({
+  players,
+  title = "Leaderboard",
   maxScore = 16000
 }: LeaderboardProps) => {
   // Sort players by score in descending order and limit entries
@@ -46,24 +46,24 @@ const Leaderboard = ({
         ) : (
           <div className="progress-items">
             {sortedPlayers.map((player, index) => {
-                const rank = index + 1;
-                const progressPercentage = getProgressPercentage(player.completion_score);
-                const barColor = getRankColor(rank);
+              const rank = index + 1;
+              const progressPercentage = getProgressPercentage(player.completion_score);
+              const barColor = getRankColor(rank);
               return (
                 <div className='' key={player.id}>
                   <p>{player.name}</p>
                   <div className='progress-item'>
-                  <span className="rank-badge" style={{ backgroundColor: barColor }}>
-                    {rank === 1 && <div className="rank-shine" />}
-                    #{rank}
-                  </span>
-                  <ProgressBar
-                    key={player.id}
-                    progressPercentage={progressPercentage}
-                    barColor={'aqua'}
-                    barText={player.name}
-                  />
-</div>
+                    <span className="rank-badge" style={{ backgroundColor: barColor }}>
+                      {rank === 1 && <div className="rank-shine" />}
+                      #{rank}
+                    </span>
+                    <ProgressBar
+                      key={player.id}
+                      progressPercentage={progressPercentage}
+                      barColor={'aqua'}
+                      barText={player.name}
+                    />
+                  </div>
                 </div>
               );
             })}

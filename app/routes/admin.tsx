@@ -1,30 +1,51 @@
 import { useLoaderData } from "react-router";
-import { getAllCategories, getAllPlayers, getSummaryPlayers } from "~/models/game.server";
-import type { Route } from "./+types/admin";
+import { getAllCategories, getAllProgressEntriesWithAudit, getAllUsers, getSummaryUsers } from "~/models/game.server";
+import { requireAdmin } from "~/utils/session.server";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const players = getAllPlayers();
+export async function loader({ request }: { request: Request }) {
+  // Require admin privileges
+  await requireAdmin(request);
+
+  const users = getAllUsers();
   const categories = getAllCategories();
-  const leaderboard = getSummaryPlayers();
-  
-  return { players, categories, leaderboard };
+  const leaderboard = getSummaryUsers();
+  const auditLog = getAllProgressEntriesWithAudit();
+
+  return { users, categories, leaderboard, auditLog };
 }
 
 export default function Admin() {
-  const { players, categories, leaderboard } = useLoaderData<typeof loader>();
-  
+  const { users, categories, leaderboard, auditLog } = useLoaderData<typeof loader>();
+
   return (
-    <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto", marginBottom: "8rem" }}>
       <h1>🎮 Game Tracker Admin</h1>
-      
+
+      <div style={{ marginBottom: "30px" }}>
+        <a
+          href="/admin/users"
+          style={{
+            backgroundColor: "#28a745",
+            color: "white",
+            padding: "10px 20px",
+            textDecoration: "none",
+            borderRadius: "5px",
+            display: "inline-block",
+            marginRight: "10px"
+          }}
+        >
+          👥 Manage Users
+        </a>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", marginTop: "30px" }}>
-        
-        {/* Players Management */}
+
+        {/* Users Management */}
         <div style={{ border: "1px solid #ddd", padding: "20px", borderRadius: "8px" }}>
-          <h2>👥 Players ({players.length})</h2>
-          
+          <h2>👥 Users ({users.length})</h2>
+
           <div style={{ marginBottom: "20px" }}>
-            <a 
+            <a
               href="/admin/create-player"
               style={{
                 backgroundColor: "#007bff",
@@ -35,107 +56,52 @@ export default function Admin() {
                 display: "inline-block"
               }}
             >
-              + Add New Player
+              + Add New User
             </a>
           </div>
-          
-          {players.length > 0 ? (
+
+          {users.length > 0 ? (
             <div>
-              {players.map(player => (
-                <div key={player.id} style={{ 
-                  border: "1px solid #eee", 
-                  padding: "10px", 
-                  marginBottom: "10px", 
+              {users.map(user => (
+                <div key={user.id} style={{
+                  border: "1px solid #eee",
+                  padding: "10px",
+                  marginBottom: "10px",
                   borderRadius: "4px",
                   display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
+                  justifyContent: "space-between"
                 }}>
+                  <span>{user.name} ({user.role})</span>
                   <div>
-                    <strong>{player.name}</strong>
-                    <br />
-                    <small>Created: {new Date(player.created_at).toLocaleDateString()}</small>
-                  </div>
-                  <div>
-                    <a 
-                      href={`/admin/setup/${player.name}`}
-                      style={{ 
-                        backgroundColor: "#28a745", 
-                        color: "white", 
-                        padding: "5px 10px", 
-                        textDecoration: "none", 
-                        borderRadius: "3px",
-                        fontSize: "12px",
-                        marginRight: "5px"
-                      }}
-                    >
-                      Setup Game
-                    </a>
-                    <a 
-                      href={`/player/${player.name}`}
-                      style={{ 
-                        backgroundColor: "#17a2b8", 
-                        color: "white", 
-                        padding: "5px 10px", 
-                        textDecoration: "none", 
-                        borderRadius: "3px",
-                        fontSize: "12px"
-                      }}
+                    <a
+                      href={`/player/${user.name}`}
+                      style={{ marginRight: "10px", color: "#007bff" }}
                     >
                       View Profile
+                    </a>
+                    <a
+                      href={`/admin/setup/${user.name}`}
+                      style={{ color: "#007bff" }}
+                    >
+                      Setup
                     </a>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p style={{ color: "#666" }}>No players yet. Create one to get started!</p>
+            <p style={{ color: "#666" }}>No users yet.</p>
           )}
         </div>
 
-        {/* Quick Actions */}
+        {/* Categories */}
         <div style={{ border: "1px solid #ddd", padding: "20px", borderRadius: "8px" }}>
-          <h2>⚡ Quick Actions</h2>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <a 
-              href="/admin/add-progress"
-              style={{
-                backgroundColor: "#ffc107",
-                color: "#212529",
-                padding: "15px",
-                textDecoration: "none",
-                borderRadius: "5px",
-                textAlign: "center",
-                fontWeight: "bold"
-              }}
-            >
-              📈 Add Progress for Player
-            </a>
-            
-            <a 
-              href="/dashboard"
-              style={{
-                backgroundColor: "#6c757d",
-                color: "white",
-                padding: "15px",
-                textDecoration: "none",
-                borderRadius: "5px",
-                textAlign: "center"
-              }}
-            >
-              📊 View Full Dashboard
-            </a>
-          </div>
-
-          <h3 style={{ marginTop: "30px" }}>📋 Game Categories</h3>
-          <ul style={{ listStyle: "none", padding: "0" }}>
+          <h2>📊 Categories ({categories.length})</h2>
+          <ul style={{ listStyle: "none", padding: 0 }}>
             {categories.map(category => (
-              <li key={category.id} style={{ 
-                backgroundColor: "#f8f9fa", 
-                padding: "8px", 
-                marginBottom: "5px", 
-                borderRadius: "3px",
+              <li key={category.id} style={{
+                padding: "8px 0",
+                borderBottom: "1px solid #eee",
                 display: "flex",
                 justifyContent: "space-between"
               }}>
@@ -144,6 +110,45 @@ export default function Admin() {
               </li>
             ))}
           </ul>
+        </div>
+      </div>
+
+      {/* Audit Log */}
+      <div style={{ marginTop: "40px", border: "1px solid #ddd", padding: "20px", borderRadius: "8px" }}>
+        <h2>📋 Recent Activity (Audit Log)</h2>
+        <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+          {auditLog.length > 0 ? (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #ddd" }}>
+                  <th style={{ textAlign: "left", padding: "8px" }}>Date</th>
+                  <th style={{ textAlign: "left", padding: "8px" }}>Player</th>
+                  <th style={{ textAlign: "left", padding: "8px" }}>Category</th>
+                  <th style={{ textAlign: "left", padding: "8px" }}>Amount</th>
+                  <th style={{ textAlign: "left", padding: "8px" }}>Added By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLog.slice(0, 50).map(entry => (
+                  <tr key={entry.id} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "8px", fontSize: "12px" }}>
+                      {new Date(entry.recorded_at).toLocaleString()}
+                    </td>
+                    <td style={{ padding: "8px" }}>{entry.user_name}</td>
+                    <td style={{ padding: "8px" }}>{entry.category_name}</td>
+                    <td style={{ padding: "8px", fontWeight: entry.amount > 0 ? "normal" : "bold", color: entry.amount > 0 ? "green" : "red" }}>
+                      {entry.amount > 0 ? "+" : ""}{entry.amount}
+                    </td>
+                    <td style={{ padding: "8px", color: "#666" }}>
+                      {entry.added_by_username || "System"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p style={{ color: "#666" }}>No activity yet.</p>
+          )}
         </div>
       </div>
 

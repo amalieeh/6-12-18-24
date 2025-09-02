@@ -1,6 +1,7 @@
 import { useLoaderData } from "react-router";
 import ProgressBar from "~/components/LeaderBoard/ProgressBar";
-import { getAllCategories, getSummaryPlayers } from "~/models/game.server";
+import { getAllCategories, getSummaryUsers } from "~/models/game.server";
+import { requireUser } from "~/utils/session.server";
 import '../styles/leaderboard.css';
 import '../styles/progressBar.css';
 import type { Route } from "./+types/dashboard";
@@ -9,14 +10,16 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const categories = getAllCategories();
 
-  const players = getSummaryPlayers();
+  const users = getSummaryUsers();
 
-  return { categories, players };
+  const currentUser = await requireUser(request);
+
+  return { categories, users, currentUser };
 }
 
 export default function Dashboard() {
-  const { players } = useLoaderData<typeof loader>();
-  const sortedPlayers = [...players].sort((a, b) => b.completion_score - a.completion_score);
+  const { users, currentUser } = useLoaderData<typeof loader>();
+  const sortedUsers = [...users].sort((a, b) => b.completion_score - a.completion_score);
 
   const getRankColor = (rank: number): string => {
     switch (rank) {
@@ -31,20 +34,21 @@ export default function Dashboard() {
   return (
     <div>
       <h1>Tester funksjon</h1>
-      <h2 className="mb-12">Players ({sortedPlayers.length})</h2>
+      <h2 className="mb-12">Users ({sortedUsers.length})</h2>
       <div className="flex flex-col gap-2 w-full">
-        {sortedPlayers.length > 0 ? (
-          sortedPlayers.map((player, index) => {
+        {sortedUsers.length > 0 ? (
+          sortedUsers.map((user, index) => {
             const rank = index + 1;
             const barColor = getRankColor(rank);
+            const isCurrentUser = user.id === currentUser.id;
             return (
-              <div key={player.id} className="flex flex-row gap-4 cursor-pointer" onClick={() => window.location.href = `/player/${player.name}`}>
+              <div key={user.id} className={`flex flex-row gap-4 cursor-pointer ${isCurrentUser ? 'current-user-highlight' : ''}`} onClick={() => window.location.href = `/player/${user.name}`}>
                 <span className="rank-badge" style={{ backgroundColor: barColor }}>
                   {rank === 1 && <div className="rank-shine" />}
                   #{rank}
                 </span>
                 <span className="grid w-full" style={{ color: barColor }}>
-                  <ProgressBar key={player.id} progressPercentage={player.completion_percentage} barColor={getRankColor(0)} barText={player.name} />
+                  <ProgressBar key={user.id} progressPercentage={user.completion_percentage} barColor={getRankColor(0)} barText={user.name} />
                 </span>
               </div>
             );

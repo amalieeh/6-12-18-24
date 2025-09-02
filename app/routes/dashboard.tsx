@@ -33,7 +33,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1>Tester funksjon</h1>
+      <h1>Ledertavle</h1>
       <h2 className="mb-12">Users ({sortedUsers.length})</h2>
       <div className="flex flex-col gap-2 w-full">
         {sortedUsers.length > 0 ? (

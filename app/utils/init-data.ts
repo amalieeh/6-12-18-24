@@ -1,11 +1,11 @@
 import { createUser, getAllUsers } from "../models/auth.server";
 
 // Initialize default users if they don't exist
-export function initializeDefaultData() {
+export async function initializeDefaultData() {
   try {
     // Create a test admin user
     try {
-      createUser("admin", "admin123", "Admin User", "admin");
+      await createUser("admin", "admin123", "Admin User", "admin");
       console.log("✅ Default admin user created (username: admin, password: admin123)");
     } catch (error: any) {
       if (error.message.includes("already exists")) {
@@ -22,9 +22,9 @@ export function initializeDefaultData() {
       { username: "tinastina", name: "Tinastina", password: "player123" }
     ];
 
-    testPlayers.forEach(player => {
+    for (const player of testPlayers) {
       try {
-        createUser(player.username, player.password, player.name, "player");
+        await createUser(player.username, player.password, player.name, "player");
         console.log(`✅ Test player created: ${player.name} (username: ${player.username}, password: ${player.password})`);
       } catch (error: any) {
         if (error.message.includes("already exists")) {
@@ -33,16 +33,16 @@ export function initializeDefaultData() {
           console.error(`❌ Error creating player ${player.name}:`, error.message);
         }
       }
-    });
+    }
 
-    const users = getAllUsers();
+    const users = await getAllUsers();
     console.log(`ℹ️ Total users: ${users.length} (${users.filter(u => u.role === 'admin').length} admin, ${users.filter(u => u.role === 'player').length} players)`);
 
     console.log("✅ Data initialization complete");
   } catch (error) {
     console.error("❌ Error during data initialization:", error);
+    throw error;
   }
 }
 
-// Run initialization
-initializeDefaultData();
+

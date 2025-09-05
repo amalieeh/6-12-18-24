@@ -1,21 +1,93 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// models/database.server.ts
+import {
+  createClient,
+  type Client,
+  type InArgs,
+  type InStatement,
+  type InValue,
+} from "@libsql/client";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { assertServerEnv, env } from "../utils/env.server";
 
-// Create database file in project root (one level up from app/)
-const dbPath = path.join(__dirname, '../../gamedata.db');
-const db = new Database(dbPath);
+// Validate environment variables
+assertServerEnv();
 
-// Enable foreign keys
-db.pragma('foreign_keys = ON');
+const { INIT_DB_ON_BOOT } = process.env;
 
-// Create tables
-function initializeDatabase() {
-  // Users table (replaces both users and players)
-  db.exec(`
+let client: Client | null = null;
+function getClient(): Client {
+  if (client) return client;
+  client = createClient({
+    url: env.TURSO_DATABASE_URL!,
+    authToken: env.TURSO_AUTH_TOKEN || undefined,
+  });
+  return client;
+}
+
+// Allow both prepare().get(x, y) and prepare().get([x, y])
+function normalizeArgs(args: unknown[]): InArgs {
+  const flat = args.length === 1 && Array.isArray(args[0]) ? (args[0] as unknown[]) : args;
+  // LibSQL doesn't accept booleans; convert if you use them in params.
+  for (let i = 0; i < flat.length; i++) {
+    if (typeof flat[i] === "boolean") flat[i] = flat[i] ? 1 : 0;
+  }
+  return flat as InValue[];
+}
+
+// Tiny compat layer that looks like better-sqlite3
+export const db = {
+  async exec(sql: string, args: unknown[] = []) {
+    await getClient().execute({ sql, args: normalizeArgs(args) } as InStatement);
+  },
+
+  async get<T = Record<string, unknown>>(sql: string, args: unknown[] = []) {
+    const res = await getClient().execute({ sql, args: normalizeArgs(args) } as InStatement);
+    return (res.rows[0] as T) ?? undefined;
+  },
+
+  async all<T = Record<string, unknown>>(sql: string, args: unknown[] = []) {
+    const res = await getClient().execute({ sql, args: normalizeArgs(args) } as InStatement);
+    return res.rows as T[];
+  },
+
+  prepare(sql: string) {
+    return {
+      get: async (...args: unknown[]) => db.get(sql, args),
+      all: async (...args: unknown[]) => db.all(sql, args),
+      run: async (...args: unknown[]) => {
+        const res = await getClient().execute({ sql, args: normalizeArgs(args) } as InStatement);
+        return {
+          lastInsertRowid: (res.lastInsertRowid as unknown) ?? undefined,
+          changes: (res.rowsAffected as number | undefined) ?? 0,
+        };
+      },
+    };
+  },
+
+  async transaction<T>(fn: () => Promise<T>): Promise<T> {
+    const c = getClient();
+    try {
+      await c.execute("BEGIN");
+      const out = await fn();
+      await c.execute("COMMIT");
+      return out;
+    } catch (e) {
+      try {
+        await c.execute("ROLLBACK");
+      } catch (rollbackError) {
+        // Ignore rollback errors if no transaction is active
+        console.warn("Rollback failed (transaction may not be active):", rollbackError);
+      }
+      throw e;
+    }
+  },
+};
+
+// -------- Database initialization --------
+export async function initializeDatabase() {
+  console.log("🚀 Initializing database schema...");
+  
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
@@ -26,8 +98,7 @@ function initializeDatabase() {
     )
   `);
 
-  // Sessions table for session management
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS sessions (
       id TEXT PRIMARY KEY,
       user_id INTEGER NOT NULL,
@@ -37,8 +108,7 @@ function initializeDatabase() {
     )
   `);
 
-  // Categories table
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -47,8 +117,7 @@ function initializeDatabase() {
     )
   `);
 
-  // User commitments (what each user chose to do)
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS user_commitments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -60,8 +129,7 @@ function initializeDatabase() {
     )
   `);
 
-  // Progress tracking - now includes who added the entry
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS progress_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -75,27 +143,39 @@ function initializeDatabase() {
     )
   `);
 
-  // Insert default categories if they don't exist
-  const categoryCheck = db.prepare('SELECT COUNT(*) as count FROM categories').get() as { count: number };
-  
-  if (categoryCheck.count === 0) {
-    const insertCategory = db.prepare('INSERT INTO categories (name, unit) VALUES (?, ?)');
-    
-    insertCategory.run('Eating', 'donuts');
-    insertCategory.run('Drinking', 'beers');
-    insertCategory.run('Running', 'km');
-    insertCategory.run('Fapping', 'events');
-
-    console.log('✅ Default categories added');
+  const row = await db.get<{ count: number }>("SELECT COUNT(*) as count FROM categories");
+  if (!row || row.count === 0) {
+    const insert = db.prepare("INSERT INTO categories (name, unit) VALUES (?, ?)");
+    await insert.run("Eating", "donuts");
+    await insert.run("Drinking", "beers");
+    await insert.run("Running", "km");
+    await insert.run("Fapping", "events");
+    console.log("✅ Default categories added");
   }
+  
+  console.log("✅ Database schema initialization complete");
 }
 
-// Initialize database on import
-initializeDatabase();
+// Initialize with default data as well
+export async function initializeDatabaseWithData() {
+  await initializeDatabase();
+  
+  // Import and run data initialization
+  const { initializeDefaultData } = await import("../utils/init-data");
+  await initializeDefaultData();
+  
+  console.log("✅ Full database initialization complete");
+}
 
-// Initialize default data after database setup
-import("../utils/init-data");
-
-console.log(`✅ Database initialized at: ${dbPath}`);
+// Auto-initialize for production deployment
+if (env.NODE_ENV === "production" || INIT_DB_ON_BOOT === "true") {
+  initializeDatabaseWithData().catch((e) => {
+    console.error("❌ Database initialization failed:", e);
+    // Don't exit process in production, let the app try to continue
+    if (env.NODE_ENV !== "production") {
+      process.exit(1);
+    }
+  });
+}
 
 export default db;

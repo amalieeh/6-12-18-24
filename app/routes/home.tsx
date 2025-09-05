@@ -5,7 +5,7 @@ import '../styles/home.css';
 import type { Route } from "./+types/home";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const users = getAllUsers();
+  const users = await getAllUsers();
   return { users };
 }
 

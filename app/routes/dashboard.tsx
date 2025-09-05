@@ -8,9 +8,9 @@ import type { Route } from "./+types/dashboard";
 
 export async function loader({ request }: Route.LoaderArgs) {
 
-  const categories = getAllCategories();
+  const categories = await getAllCategories();
 
-  const users = getSummaryUsers();
+  const users = await getSummaryUsers();
 
   const currentUser = await requireUser(request);
 
@@ -34,7 +34,6 @@ export default function Dashboard() {
   return (
     <div>
       <h1>Ledertavle</h1>
-      <h2 className="mb-12">Users ({sortedUsers.length})</h2>
       <div className="flex flex-col gap-2 w-full">
         {sortedUsers.length > 0 ? (
           sortedUsers.map((user, index) => {
@@ -54,7 +53,7 @@ export default function Dashboard() {
             );
           })
         ) : (
-          <p>No players yet. <a href="/add-player">Add a player</a></p>
+          <p>No players yet.</p>
         )}
       </div>
     </div>

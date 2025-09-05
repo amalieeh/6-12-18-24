@@ -10,12 +10,12 @@ export async function loader({ params, request }: { params: { playerName: string
   const playerName = params.playerName;
   if (!playerName) throw new Response("Player name required", { status: 400 });
 
-  const user = getUser(playerName);
+  const user = await getUser(playerName);
   if (!user) throw new Response("User not found", { status: 404 });
 
-  const categories = getAllCategories();
-  const existingCommitments = getUserStatuses(playerName);
-  const userProgress = getAllProgresses();
+  const categories = await getAllCategories();
+  const existingCommitments = await getUserStatuses(playerName);
+  const userProgress = await getAllProgresses();
 
   // Get current user and check permissions
   const currentUser = await getUserFromRequest(request);
@@ -26,39 +26,56 @@ export async function loader({ params, request }: { params: { playerName: string
 
 export async function action({ params, request }: { params: { playerName: string }; request: Request }) {
   const playerName = params.playerName;
+  console.log("Action called for player:", playerName);
+
   if (!playerName) throw new Response("Player name required", { status: 400 });
 
-  const user = getUser(playerName);
+  const user = await getUser(playerName);
   if (!user) throw new Response("User not found", { status: 404 });
 
   // Check permissions
   const currentUser = await getUserFromRequest(request);
+  console.log("Current user:", currentUser?.username, "Target user:", user.name);
+
   if (!currentUser) {
     throw new Response("Must be logged in", { status: 401 });
   }
 
   if (!canEditUser(currentUser, user.id)) {
+    console.log("Permission denied - current user role:", currentUser.role, "target user ID:", user.id);
     throw new Response("Not authorized to edit this user's data", { status: 403 });
   }
 
   const formData = await request.formData();
   const action = formData.get("_action");
+  console.log("Form action:", action);
 
   if (action === "createCommitments") {
-    const categories = getAllCategories();
-    const commitments = categories.map(category => {
-      const targetAmount = parseInt(formData.get(category.name) as string);
-      if (isNaN(targetAmount)) {
-        throw new Response(`Invalid amount for ${category.name}`, { status: 400 });
+    const categories = await getAllCategories();
+    const commitments = [];
+
+    for (const category of categories) {
+      const targetAmountStr = formData.get(category.name) as string;
+      console.log(`Processing category: ${category.name}, value: ${targetAmountStr}`);
+
+      if (!targetAmountStr || targetAmountStr.trim() === '') {
+        return { error: `Please enter a target amount for ${category.name}` };
       }
-      return { categoryName: category.name, targetAmount };
-    });
+
+      const targetAmount = parseInt(targetAmountStr);
+      if (isNaN(targetAmount) || targetAmount <= 0) {
+        return { error: `Invalid amount for ${category.name}: must be a positive number` };
+      }
+
+      commitments.push({ categoryName: category.name, targetAmount });
+    }
 
     try {
-      setUserCommitments(playerName, commitments);
+      await setUserCommitments(playerName, commitments);
       return { success: true };
     } catch (error: any) {
-      throw new Response(error.message, { status: 400 });
+      console.error("Error setting commitments:", error);
+      return { error: `Database error: ${error.message}` };
     }
   }
 
@@ -71,7 +88,7 @@ export async function action({ params, request }: { params: { playerName: string
   }
 
   try {
-    addProgress(playerName, category, amount, currentUser.id);
+    await addProgress(playerName, category, amount, currentUser.id);
     return { success: true };
   } catch (error: any) {
     throw new Response(error.message, { status: 400 });

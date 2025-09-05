@@ -26,30 +26,30 @@ export interface ProgressEntry {
 }
 
 // ===== USERS =====
-export function getUser(name: string): User | undefined {
+export async function getUser(name: string): Promise<User | undefined> {
   const stmt = db.prepare('SELECT * FROM users WHERE name = ?');
-  return stmt.get(name) as User | undefined;
+  return await stmt.get(name) as User | undefined;
 }
 
-export function getUserByUsername(username: string): User | undefined {
+export async function getUserByUsername(username: string): Promise<User | undefined> {
   const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-  return stmt.get(username) as User | undefined;
+  return await stmt.get(username) as User | undefined;
 }
 
-export function getAllUsers(): User[] {
+export async function getAllUsers(): Promise<User[]> {
   const stmt = db.prepare('SELECT * FROM users ORDER BY name');
-  return stmt.all() as User[];
+  return await stmt.all() as unknown as User[];
 }
 
 // ===== CATEGORIES =====
-export function getAllCategories(): Category[] {
+export async function getAllCategories(): Promise<Category[]> {
   const stmt = db.prepare('SELECT * FROM categories ORDER BY name');
-  return stmt.all() as Category[];
+  return await stmt.all() as unknown as Category[];
 }
 
-export function createCategory(name: string, unit: string): Category {
+export async function createCategory(name: string, unit: string): Promise<Category> {
   const stmt = db.prepare('INSERT INTO categories (name, unit) VALUES (?, ?)');
-  const result = stmt.run(name, unit);
+  const result = await stmt.run(name, unit);
   return { 
     id: result.lastInsertRowid as number, 
     name, 
@@ -59,12 +59,12 @@ export function createCategory(name: string, unit: string): Category {
 }
 
 // ===== USER COMMITMENTS =====
-export function setUserCommitment(userName: string, categoryName: string, targetAmount: number): void {
+export async function setUserCommitment(userName: string, categoryName: string, targetAmount: number): Promise<void> {
   // Get user and category IDs
-  const user = getUser(userName);
+  const user = await getUser(userName);
   if (!user) throw new Error(`User "${userName}" not found`);
   
-  const category = db.prepare('SELECT * FROM categories WHERE name = ?').get(categoryName) as Category | undefined;
+  const category = await db.get('SELECT * FROM categories WHERE name = ?', [categoryName]) as Category | undefined;
   if (!category) throw new Error(`Category "${categoryName}" not found`);
   
   // Insert or update commitment
@@ -73,30 +73,26 @@ export function setUserCommitment(userName: string, categoryName: string, target
     VALUES (?, ?, ?)
   `);
   
-  stmt.run(user.id, category.id, targetAmount);
+  await stmt.run(user.id, category.id, targetAmount);
 }
 
-export function setUserCommitments(userName: string, commitments: { categoryName: string; targetAmount: number }[]): void {
-  const user = getUser(userName);
+export async function setUserCommitments(userName: string, commitments: { categoryName: string; targetAmount: number }[]): Promise<void> {
+  const user = await getUser(userName);
   if (!user) throw new Error(`User "${userName}" not found`);
 
-  const insertStmt = db.prepare(`
-    INSERT OR REPLACE INTO user_commitments (user_id, category_id, target_amount) 
-    VALUES (?, ?, ?)
-  `);
-
-  const getCategoryStmt = db.prepare('SELECT id FROM categories WHERE name = ?');
-
-  db.transaction(() => {
-    for (const commitment of commitments) {
-      const category = getCategoryStmt.get(commitment.categoryName) as { id: number } | undefined;
-      if (!category) throw new Error(`Category "${commitment.categoryName}" not found`);
-      insertStmt.run(user.id, category.id, commitment.targetAmount);
-    }
-  })();
+  // For now, let's process without transactions to avoid the rollback issue
+  // TODO: Investigate proper transaction handling with Turso later
+  const insertStmt = db.prepare('INSERT OR REPLACE INTO user_commitments (user_id, category_id, target_amount) VALUES (?, ?, ?)');
+  
+  for (const commitment of commitments) {
+    const category = await db.get('SELECT id FROM categories WHERE name = ?', [commitment.categoryName]) as { id: number } | undefined;
+    if (!category) throw new Error(`Category "${commitment.categoryName}" not found`);
+    
+    await insertStmt.run(user.id, category.id, commitment.targetAmount);
+  }
 }
 
-export function getUserStatuses(userName: string): UserStatus[] {
+export async function getUserStatuses(userName: string): Promise<UserStatus[]> {
   const stmt = db.prepare(`
     SELECT 
       u.name as user_name,
@@ -114,15 +110,15 @@ export function getUserStatuses(userName: string): UserStatus[] {
     ORDER BY c.name
   `);
   
-  return stmt.all(userName) as UserStatus[];
+  return await stmt.all(userName) as unknown as UserStatus[];
 }
 
 // ===== PROGRESS =====
-export function addProgress(userName: string, categoryName: string, amount: number, addedByUserId?: number): ProgressEntry {
-  const user = getUser(userName);
+export async function addProgress(userName: string, categoryName: string, amount: number, addedByUserId?: number): Promise<ProgressEntry> {
+  const user = await getUser(userName);
   if (!user) throw new Error(`User "${userName}" not found`);
   
-  const category = db.prepare('SELECT * FROM categories WHERE name = ?').get(categoryName) as Category | undefined;
+  const category = await db.get('SELECT * FROM categories WHERE name = ?', [categoryName]) as unknown as Category | undefined;
   if (!category) throw new Error(`Category "${categoryName}" not found`);
   
   const stmt = db.prepare(`
@@ -130,7 +126,7 @@ export function addProgress(userName: string, categoryName: string, amount: numb
     VALUES (?, ?, ?, ?)
   `);
   
-  const result = stmt.run(user.id, category.id, amount, addedByUserId || null);
+  const result = await stmt.run(user.id, category.id, amount, addedByUserId || null);
   return { 
     id: result.lastInsertRowid as number, 
     userName, 
@@ -146,7 +142,7 @@ export interface PlayerProgress {
   recorded_at: string;
 }
 
-export function getPlayerProgress(playerName: string): PlayerProgress[] {
+export async function getPlayerProgress(playerName: string): Promise<PlayerProgress[]> {
   const stmt = db.prepare(`
     SELECT 
       c.name as category_name,
@@ -155,12 +151,12 @@ export function getPlayerProgress(playerName: string): PlayerProgress[] {
       pe.recorded_at
     FROM progress_entries pe
     JOIN categories c ON pe.category_id = c.id
-    JOIN players p ON pe.player_id = p.id
-    WHERE p.name = ?
+    JOIN users u ON pe.user_id = u.id
+    WHERE u.name = ?
     ORDER BY pe.recorded_at DESC
   `);
 
-  return stmt.all(playerName) as PlayerProgress[];
+  return await stmt.all(playerName) as unknown as PlayerProgress[];
 }
 
 export interface UserProgress {
@@ -171,7 +167,7 @@ export interface UserProgress {
   added_by_username?: string;
 }
 
-export function getUserProgress(userName: string): UserProgress[] {
+export async function getUserProgress(userName: string): Promise<UserProgress[]> {
   const stmt = db.prepare(`
     SELECT 
       c.name as category_name,
@@ -187,10 +183,10 @@ export function getUserProgress(userName: string): UserProgress[] {
     ORDER BY pe.recorded_at DESC
   `);
 
-  return stmt.all(userName) as UserProgress[];
+  return await stmt.all(userName) as unknown as UserProgress[];
 }
 
-export function getAllProgresses(): UserProgress[] {
+export async function getAllProgresses(): Promise<UserProgress[]> {
   const stmt = db.prepare(`
     SELECT 
       c.name as category_name,
@@ -204,7 +200,7 @@ export function getAllProgresses(): UserProgress[] {
     ORDER BY pe.recorded_at DESC
   `);
   
-  return stmt.all() as UserProgress[];
+  return await stmt.all() as unknown as UserProgress[];
 }
 
 // Get progress entries with audit trail for admin
@@ -218,7 +214,7 @@ export interface ProgressEntryWithAudit {
   added_by_user_id?: number;
 }
 
-export function getAllProgressEntriesWithAudit(): ProgressEntryWithAudit[] {
+export async function getAllProgressEntriesWithAudit(): Promise<ProgressEntryWithAudit[]> {
   const stmt = db.prepare(`
     SELECT 
       pe.id,
@@ -235,7 +231,7 @@ export function getAllProgressEntriesWithAudit(): ProgressEntryWithAudit[] {
     ORDER BY pe.recorded_at DESC
   `);
   
-  return stmt.all() as ProgressEntryWithAudit[];
+  return await stmt.all() as unknown as ProgressEntryWithAudit[];
 }
 
 // ===== LEADERBOARD =====
@@ -247,7 +243,7 @@ export interface UserSummary {
   completion_percentage: number;
 }
 
-export function getSummaryUsers(): UserSummary[] {
+export async function getSummaryUsers(): Promise<UserSummary[]> {
   const stmt = db.prepare(`
     SELECT 
       u.id as id,
@@ -274,10 +270,12 @@ export function getSummaryUsers(): UserSummary[] {
     ORDER BY completion_percentage DESC
   `);
   
-  return stmt.all() as UserSummary[];
+  return await stmt.all() as unknown as UserSummary[];
 }
 
 // ===== UTILITY =====
+// Note: Turso connections are managed automatically, no manual close needed
 export function closeDatabase(): void {
-  db.close();
+  // No-op for Turso - connections are managed automatically
+  console.log("Database connections are managed automatically with Turso");
 }

@@ -64,6 +64,24 @@ The containerized application can be deployed to any platform that supports Dock
 - Fly.io
 - Railway
 
+### Environment Variables
+
+This app requires the following environment variables for production:
+
+```bash
+TURSO_DATABASE_URL=libsql://your-database-url.turso.io
+TURSO_AUTH_TOKEN=your-auth-token-here
+NODE_ENV=production
+```
+
+### Render Deployment
+
+1. Create a Turso database at [turso.tech](https://turso.tech)
+2. Get your database URL and auth token
+3. Deploy to Render using the included `render.yaml` configuration
+4. Set your environment variables in the Render dashboard
+5. The database will be automatically initialized on first startup
+
 ### DIY Deployment
 
 If you're familiar with deploying Node applications, the built-in app server is production-ready.
@@ -77,6 +95,14 @@ Make sure to deploy the output of `npm run build`
 │   ├── client/    # Static assets
 │   └── server/    # Server-side code
 ```
+
+## Database
+
+This app uses [Turso](https://turso.tech) as the database backend. The database schema is automatically initialized when the app starts in production mode.
+
+For local development, you can:
+1. Use a local SQLite file by setting `TURSO_DATABASE_URL=file:./gamedata.db`
+2. Set `INIT_DB_ON_BOOT=true` in your `.env.local` file to initialize data on startup
 
 ## Styling
 

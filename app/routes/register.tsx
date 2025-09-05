@@ -37,10 +37,10 @@ export async function action({ request }: { request: Request }) {
   }
 
   try {
-    const user = createUser(username, password, name, role as "player" | "admin");
+    const user = await createUser(username, password, name, role as "player" | "admin");
 
     // Create session and log them in
-    const session = createSession(user.id);
+    const session = await createSession(user.id);
 
     return redirect("/", {
       headers: {

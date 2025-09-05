@@ -12,9 +12,9 @@ export async function getUserFromRequest(request: Request): Promise<User | null>
   }
 
   // Clean up expired sessions
-  cleanupExpiredSessions();
+  await cleanupExpiredSessions();
   
-  const sessionData = getSession(sessionId);
+  const sessionData = await getSession(sessionId);
   
   if (!sessionData) {
     return null;
@@ -69,7 +69,7 @@ export async function logout(request: Request): Promise<Response> {
   const sessionId = getCookieFromRequest(request, SESSION_COOKIE_NAME);
   
   if (sessionId) {
-    deleteSession(sessionId);
+    await deleteSession(sessionId);
   }
   
   return redirect("/login", {

@@ -6,10 +6,10 @@ export async function loader({ request }: { request: Request }) {
   // Require admin privileges
   await requireAdmin(request);
 
-  const users = getAllUsers();
-  const categories = getAllCategories();
-  const leaderboard = getSummaryUsers();
-  const auditLog = getAllProgressEntriesWithAudit();
+  const users = await getAllUsers();
+  const categories = await getAllCategories();
+  const leaderboard = await getSummaryUsers();
+  const auditLog = await getAllProgressEntriesWithAudit();
 
   return { users, categories, leaderboard, auditLog };
 }

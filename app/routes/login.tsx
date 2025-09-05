@@ -21,14 +21,14 @@ export async function action({ request }: { request: Request }) {
     return { error: "Username and password are required" };
   }
 
-  const user = authenticateUser(username, password);
+  const user = await authenticateUser(username, password);
 
   if (!user) {
     return { error: "Invalid username or password" };
   }
 
   // Create session
-  const session = createSession(user.id);
+  const session = await createSession(user.id);
 
   // Redirect with session cookie
   return redirect("/", {

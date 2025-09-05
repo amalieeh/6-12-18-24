@@ -27,11 +27,11 @@ function generateSessionId(): string {
 }
 
 // Create a new user
-export function createUser(username: string, password: string, name: string, role: 'player' | 'admin' = 'player'): User {
+export async function createUser(username: string, password: string, name: string, role: 'player' | 'admin' = 'player'): Promise<User> {
   try {
     const passwordHash = hashPassword(password);
     const stmt = db.prepare('INSERT INTO users (username, name, password_hash, role) VALUES (?, ?, ?, ?)');
-    const result = stmt.run(username, name, passwordHash, role);
+    const result = await stmt.run(username, name, passwordHash, role);
     
     return {
       id: result.lastInsertRowid as number,
@@ -41,7 +41,7 @@ export function createUser(username: string, password: string, name: string, rol
       created_at: new Date().toISOString()
     };
   } catch (error: any) {
-    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    if (error.message?.includes('UNIQUE constraint failed')) {
       throw new Error(`Username "${username}" already exists`);
     }
     throw error;
@@ -49,14 +49,14 @@ export function createUser(username: string, password: string, name: string, rol
 }
 
 // Authenticate user
-export function authenticateUser(username: string, password: string): User | null {
+export async function authenticateUser(username: string, password: string): Promise<User | null> {
   const passwordHash = hashPassword(password);
   const stmt = db.prepare('SELECT * FROM users WHERE username = ? AND password_hash = ?');
-  const user = stmt.get(username, passwordHash) as User | undefined;
+  const user = await stmt.get(username, passwordHash) as any;
   
   if (user) {
     // Remove password_hash from returned user object
-    const { password_hash, ...userWithoutPassword } = user as any;
+    const { password_hash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
   
@@ -64,12 +64,12 @@ export function authenticateUser(username: string, password: string): User | nul
 }
 
 // Create session
-export function createSession(userId: number): Session {
+export async function createSession(userId: number): Promise<Session> {
   const sessionId = generateSessionId();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
   
   const stmt = db.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)');
-  stmt.run(sessionId, userId, expiresAt.toISOString());
+  await stmt.run(sessionId, userId, expiresAt.toISOString());
   
   return {
     id: sessionId,
@@ -80,7 +80,7 @@ export function createSession(userId: number): Session {
 }
 
 // Get session
-export function getSession(sessionId: string): { session: Session; user: User } | null {
+export async function getSession(sessionId: string): Promise<{ session: Session; user: User } | null> {
   const stmt = db.prepare(`
     SELECT 
       s.*,
@@ -94,7 +94,7 @@ export function getSession(sessionId: string): { session: Session; user: User } 
     WHERE s.id = ? AND s.expires_at > datetime('now')
   `);
   
-  const result = stmt.get(sessionId) as any;
+  const result = await stmt.get(sessionId) as any;
   
   if (result) {
     return {
@@ -118,28 +118,28 @@ export function getSession(sessionId: string): { session: Session; user: User } 
 }
 
 // Delete session (logout)
-export function deleteSession(sessionId: string): void {
+export async function deleteSession(sessionId: string): Promise<void> {
   const stmt = db.prepare('DELETE FROM sessions WHERE id = ?');
-  stmt.run(sessionId);
+  await stmt.run(sessionId);
 }
 
 // Clean up expired sessions
-export function cleanupExpiredSessions(): void {
+export async function cleanupExpiredSessions(): Promise<void> {
   const stmt = db.prepare('DELETE FROM sessions WHERE expires_at <= datetime(\'now\')');
-  stmt.run();
+  await stmt.run();
 }
 
 // Get user by ID
-export function getUserById(userId: number): User | null {
+export async function getUserById(userId: number): Promise<User | null> {
   const stmt = db.prepare('SELECT id, username, name, role, created_at FROM users WHERE id = ?');
-  const user = stmt.get(userId) as User | undefined;
+  const user = await stmt.get(userId) as User | undefined;
   return user || null;
 }
 
 // Get all users (admin only)
-export function getAllUsers(): User[] {
+export async function getAllUsers(): Promise<User[]> {
   const stmt = db.prepare('SELECT id, username, name, role, created_at FROM users ORDER BY username');
-  return stmt.all() as User[];
+  return await stmt.all() as unknown as User[];
 }
 
 // Check if user can edit user data

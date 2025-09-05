@@ -6,7 +6,7 @@ import { requireAdmin } from "~/utils/session.server";
 export async function loader({ request }: { request: Request }) {
   await requireAdmin(request);
 
-  const users = getAllUsers();
+  const users = await getAllUsers();
 
   return { users };
 }
@@ -29,7 +29,7 @@ export async function action({ request }: { request: Request }) {
   }
 
   try {
-    createUser(username, password, name, role as "player" | "admin");
+    await createUser(username, password, name, role as "player" | "admin");
     return { success: "User created successfully" };
   } catch (error: any) {
     return { error: error.message };

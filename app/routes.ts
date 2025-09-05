@@ -9,5 +9,5 @@ export default [
   route("unauthorized", "routes/unauthorized.tsx"),
   route("admin", "routes/admin.tsx"),
   route("admin/users", "routes/admin.users.tsx"),
-  route("player/:playerName", "routes/player.$playerName.tsx"),
+  route("player/:username", "routes/player.$username.tsx"),
 ] satisfies RouteConfig;

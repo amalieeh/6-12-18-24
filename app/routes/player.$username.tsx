@@ -1,20 +1,20 @@
 import { useLoaderData } from "react-router";
 import { canEditUser } from "~/models/auth.server";
-import { addProgress, getAllCategories, getAllProgresses, getUser, getUserStatuses, setUserCommitments } from "~/models/game.server";
+import { addProgress, getAllCategories, getAllProgresses, getUserByUsername, getUserStatuses, setUserCommitments } from "~/models/game.server";
 import { getUserFromRequest } from "~/utils/session.server";
 import ProgressBar from '../components/LeaderBoard/ProgressBar';
 import CommitmentForm from "../components/Player/CommitmentForm";
 import ScoreDetails from '../components/ScoreDetails/ScoreDetails';
 
-export async function loader({ params, request }: { params: { playerName: string }; request: Request }) {
-  const playerName = params.playerName;
-  if (!playerName) throw new Response("Player name required", { status: 400 });
+export async function loader({ params, request }: { params: { username: string }; request: Request }) {
+  const username = params.username;
+  if (!username) throw new Response("Username required", { status: 400 });
 
-  const user = await getUser(playerName);
+  const user = await getUserByUsername(username);
   if (!user) throw new Response("User not found", { status: 404 });
 
   const categories = await getAllCategories();
-  const existingCommitments = await getUserStatuses(playerName);
+  const existingCommitments = await getUserStatuses(user.name);
   const userProgress = await getAllProgresses();
 
   // Get current user and check permissions
@@ -24,13 +24,13 @@ export async function loader({ params, request }: { params: { playerName: string
   return { user, categories, existingCommitments, userProgress, currentUser, canEdit };
 }
 
-export async function action({ params, request }: { params: { playerName: string }; request: Request }) {
-  const playerName = params.playerName;
-  console.log("Action called for player:", playerName);
+export async function action({ params, request }: { params: { username: string }; request: Request }) {
+  const username = params.username;
+  console.log("Action called for player:", username);
 
-  if (!playerName) throw new Response("Player name required", { status: 400 });
+  if (!username) throw new Response("Username required", { status: 400 });
 
-  const user = await getUser(playerName);
+  const user = await getUserByUsername(username);
   if (!user) throw new Response("User not found", { status: 404 });
 
   // Check permissions
@@ -71,7 +71,7 @@ export async function action({ params, request }: { params: { playerName: string
     }
 
     try {
-      await setUserCommitments(playerName, commitments);
+      await setUserCommitments(user.name, commitments);
       return { success: true };
     } catch (error: any) {
       console.error("Error setting commitments:", error);
@@ -88,7 +88,7 @@ export async function action({ params, request }: { params: { playerName: string
   }
 
   try {
-    await addProgress(playerName, category, amount, currentUser.id);
+    await addProgress(user.name, category, amount, currentUser.id);
     return { success: true };
   } catch (error: any) {
     throw new Response(error.message, { status: 400 });

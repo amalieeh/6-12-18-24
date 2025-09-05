@@ -41,7 +41,7 @@ export default function Dashboard() {
             const barColor = getRankColor(rank);
             const isCurrentUser = user.id === currentUser.id;
             return (
-              <div key={user.id} className={`flex flex-row gap-4 cursor-pointer ${isCurrentUser ? 'current-user-highlight' : ''}`} onClick={() => window.location.href = `/player/${user.name}`}>
+              <div key={user.id} className={`flex flex-row gap-4 cursor-pointer ${isCurrentUser ? 'current-user-highlight' : ''}`} onClick={() => window.location.href = `/player/${user.username}`}>
                 <span className="rank-badge" style={{ backgroundColor: barColor }}>
                   {rank === 1 && <div className="rank-shine" />}
                   #{rank}

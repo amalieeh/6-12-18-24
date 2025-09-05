@@ -74,7 +74,7 @@ export default function Admin() {
                   <span>{user.name} ({user.role})</span>
                   <div>
                     <a
-                      href={`/player/${user.name}`}
+                      href={`/player/${user.username}`}
                       style={{ marginRight: "10px", color: "#007bff" }}
                     >
                       View Profile

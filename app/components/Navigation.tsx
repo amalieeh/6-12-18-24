@@ -3,7 +3,7 @@ import "../styles/navigation.css";
 
 
 const Navigation = () => {
-  const rootData = useRouteLoaderData("root") as { user?: { name: string; role: string; id?: number } } | undefined;
+  const rootData = useRouteLoaderData("root") as { user?: { name: string; username: string; role: string; id?: number } } | undefined;
   const user = rootData?.user;
 
   return (
@@ -18,7 +18,7 @@ const Navigation = () => {
       {user ? (
         <>
           {user.id && (
-            <a href={`/player/${user.name}`}>
+            <a href={`/player/${user.username}`}>
               <h2>Min Profil →</h2>
             </a>
           )}

@@ -58,7 +58,7 @@ export default function AdminUsers() {
               padding: "15px",
               borderRadius: "5px",
             }} className="text-brand-text">
-              <a href={`/player/${user.name}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <a href={`/player/${user.username}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h4 style={{ margin: "0 0 5px 0" }}>{user.name}</h4>
                   <p style={{ margin: "0", color: "#bbb", fontSize: "14px" }}>

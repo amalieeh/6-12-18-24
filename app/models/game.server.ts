@@ -238,6 +238,7 @@ export async function getAllProgressEntriesWithAudit(): Promise<ProgressEntryWit
 export interface UserSummary {
   id: number;
   name: string;
+  username: string;
   completion_score: number;
   max_completion_score: number;
   completion_percentage: number;
@@ -248,6 +249,7 @@ export async function getSummaryUsers(): Promise<UserSummary[]> {
     SELECT 
       u.id as id,
       u.name as name,
+      u.username as username,
       COALESCE(progress_totals.total_progress, 0) as completion_score,
       commitment_totals.total_target as max_completion_score,
       ROUND((COALESCE(progress_totals.total_progress, 0) * 100.0 / commitment_totals.total_target), 1) as completion_percentage

@@ -1,0 +1,26 @@
+FROM node:20-alpine AS base
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+FROM base AS development-dependencies-env
+RUN npm install --no-audit --no-fund
+
+FROM base AS production-dependencies-env  
+RUN npm install --omit=dev --no-audit --no-fund
+
+FROM base AS build-env
+COPY --from=development-dependencies-env /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+FROM base AS production
+COPY --from=production-dependencies-env /app/node_modules ./node_modules
+COPY --from=build-env /app/build ./build
+COPY deploy-init.js ./
+
+# Initialize database on container start (if needed)
+# In production, the database initialization happens automatically via the database.server.ts
+
+CMD ["npm", "run", "start"]

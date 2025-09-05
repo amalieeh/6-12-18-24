@@ -146,10 +146,10 @@ export async function initializeDatabase() {
   const row = await db.get<{ count: number }>("SELECT COUNT(*) as count FROM categories");
   if (!row || row.count === 0) {
     const insert = db.prepare("INSERT INTO categories (name, unit) VALUES (?, ?)");
-    await insert.run("Eating", "donuts");
-    await insert.run("Drinking", "beers");
-    await insert.run("Running", "km");
-    await insert.run("Fapping", "events");
+    await insert.run("Donuts", "stk");
+    await insert.run("Øl", "stk");
+    await insert.run("Løping", "km");
+    await insert.run("Runk", "stk");
     console.log("✅ Default categories added");
   }
   

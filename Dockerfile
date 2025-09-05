@@ -6,7 +6,10 @@ RUN npm ci --no-audit --no-fund
 FROM node:20-alpine AS production-dependencies-env
 COPY ./package.json ./package-lock.json* /app/
 WORKDIR /app
-RUN npm ci --omit=dev --no-audit --no-fund
+RUN npm config set registry https://registry.npmjs.org/ \
+  && npm config delete "//registry.npmjs.org/:_authToken" || true \
+  && echo "using registry: $(npm config get registry)" \
+  && npm ci --omit=dev --no-audit --no-fund
 
 FROM node:20-alpine AS build-env
 COPY . /app/

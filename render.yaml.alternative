@@ -2,8 +2,10 @@ services:
   - type: web
     name: 6-12-18-24
     env: node
-    plan: starter  # or whatever plan you're using
-    buildCommand: npm ci && npm run build
+    plan: starter
+    buildCommand: |
+      npm install --no-audit --no-fund
+      npm run build
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
